@@ -2,11 +2,11 @@ html,
 body {
     margin: 0;
     padding: 0;
-    height: 90vh;
+    height: 100vh;
     max-height: 100vh;
     overflow: hidden;
+    justify-content: flex-start;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
-        /* Prevents overall page scrolling */
 }
 
 body {
@@ -17,12 +17,19 @@ body {
 }
 
 #entry {
-    width: max-content;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+    padding: 50px 15px 15px;
     text-align: left;
+    order: 2;
 }
 
 .data-entry {
-    padding: 5px
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 #svg-container {
@@ -30,6 +37,7 @@ body {
     position: relative;
     width: 100%;
     min-height: 0;
+    order: 1;
 }
 
 #svg-container svg {
@@ -38,4 +46,12 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+input[type="date"],
+input[type="text"],
+button {
+    font-family: inherit;
+    font-size: 1rem;
+    /* Prevents mobile Safari from zooming in on focus */
 }

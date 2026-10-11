@@ -2,12 +2,14 @@
 <html>
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <h1>250 Million Flowers</h1>
+    <div id="svg-container"></div>
     <div id="entry">
         <form class="data-entry">
             <label for="start-date">Choose a date:</label>
@@ -19,7 +21,6 @@
             <button type="submit" id="submit">Submit</button>
         </div>
     </div>
-    <div id="svg-container"></div>
 
     <script src="index.js"></script>
 </body>
