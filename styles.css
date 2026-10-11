@@ -10,9 +10,19 @@ body {
 }
 
 body {
-    text-align: center;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#entry {
+    width: max-content;
+    text-align: left;
+}
+
+.data-entry {
+    padding: 5px
 }
 
 #svg-container {

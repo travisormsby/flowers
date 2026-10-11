@@ -7,16 +7,23 @@
 </head>
 
 <body>
-    <h1>Flower of the day</h1>
-    <form>
-        <label for="start-date">Choose a date:</label>
-        <input type="date" id="date" name="flower-date" />
-    </form>
-
+    <h1>250 Million Flowers</h1>
+    <div id="entry">
+        <form class="data-entry">
+            <label for="start-date">Choose a date:</label>
+            <input type="date" id="date" />
+        </form>
+        <div class="data-entry">
+            <label for="name">Or enter some text:</label>
+            <input type="text" id="text" placeholder="e.g. your name" />
+            <button type="submit" id="submit">Submit</button>
+        </div>
+    </div>
     <div id="svg-container"></div>
 
     <script type="text/javascript">
         let pyodideInstance = null;
+
         async function initPyodide() {
 
             // Load pyodide and packages once
@@ -26,17 +33,37 @@
 
 
             // Run it the first time automatically on page load
-            await runPythonScript();
+            await updateFlowerFromDate();
         }
 
-        var datePicker = document.getElementById('date');
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const dd = String(today.getDate()).padStart(2, '0');
-        datePicker.value = `${yyyy}-${mm}-${dd}`;
-        datePicker.addEventListener('change', runPythonScript)
+        const datePicker = document.getElementById('date');
+        resetDate()
 
+        datePicker.addEventListener('change', updateFlowerFromDate)
+
+        const text = document.getElementById("text")
+        const textBtn = document.getElementById("submit")
+        textBtn.addEventListener('click', updateFlowerFromText)
+
+        function resetDate() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const dd = String(today.getDate()).padStart(2, '0');
+            datePicker.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        async function updateFlowerFromDate() {
+            pyodideInstance.globals.set("seed_value", datePicker.value + "9")
+            text.value = null
+            runPythonScript()
+        }
+
+        async function updateFlowerFromText() {
+            pyodideInstance.globals.set("seed_value", text.value)
+            resetDate()
+            runPythonScript()
+        }
 
         async function runPythonScript() {
             await pyodideInstance.runPythonAsync(`
@@ -46,10 +73,7 @@ from datetime import datetime
 from random import choice, randint, sample, seed
 from zoneinfo import ZoneInfo
 
-time = str(datetime.now(ZoneInfo("America/Chicago")).date()) + "1"
-
-
-seed(js.datePicker.value + "9")
+seed(seed_value)
 
 def generate_hsl_string(h, s, l):
     return f"{h}, {s}, {l}"
