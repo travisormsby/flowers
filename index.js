@@ -1,0 +1,136 @@
+let pyodideInstance = null;
+
+async function initPyodide() {
+
+    // Load pyodide and packages once
+    pyodideInstance = await loadPyodide();
+    await pyodideInstance.loadPackage("micropip");
+
+
+    // Run it the first time automatically on page load
+    await updateFlowerFromDate();
+}
+
+const datePicker = document.getElementById('date');
+resetDate()
+
+datePicker.addEventListener('change', updateFlowerFromDate)
+
+const text = document.getElementById("text")
+const textBtn = document.getElementById("submit")
+textBtn.addEventListener('click', updateFlowerFromText)
+
+function resetDate() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const dd = String(today.getDate()).padStart(2, '0');
+    datePicker.value = `${yyyy}-${mm}-${dd}`;
+}
+
+async function updateFlowerFromDate() {
+    pyodideInstance.globals.set("seed_value", datePicker.value + "9")
+    text.value = null
+    runPythonScript()
+}
+
+async function updateFlowerFromText() {
+    pyodideInstance.globals.set("seed_value", text.value)
+    resetDate()
+    runPythonScript()
+}
+
+async function runPythonScript() {
+    await pyodideInstance.runPythonAsync(`
+import js
+import math
+from datetime import datetime
+from random import choice, randint, sample, seed
+
+seed(seed_value)
+
+def generate_hsl_string(h, s, l):
+    return f"{h}, {s}, {l}"
+
+def generate_hsl_palette(h, s, l):
+    h_complement = (h + 180) % 360
+    h_split_left = (h_complement - 30) % 360
+    h_split_right = (h_complement + 30) % 360
+    return ((h, s, l), (h_complement, s, l), (h_split_right, s, l), (h_split_left, s, l))
+
+def generate_flower_svg(svg_elements, petals, radius, roundness, colors, highlights, ring, center_x, center_y):
+
+    petal_color, highlight_color, center_color, ring_color = colors
+
+    # Draw stem
+    svg_elements.append(f'<path d="M {center_x}, {center_y} A {400 - center_y} {400 - center_y} 0 0 {int(center_x < 200)} 200 400" stroke="#667f44" fill="none" stroke-width="{radius / 10}" />')
+
+
+    # hold drawing info
+    petal_angles = []
+    
+    # Draw petals
+    for i in range(petals):
+        angle = (2 * math.pi * i) / petals
+        # Calculate petal center coordinates
+        px = center_x + math.cos(angle) * (radius * 0.5)
+        py = center_y + math.sin(angle) * (radius * 0.5)
+        
+        # Rotate each petal around its center or the origin
+        deg = math.degrees(angle)
+        svg_elements.append(f"""
+            <ellipse cx="{px}" cy="{py}" rx="{radius * .5}" ry="{radius * roundness}"
+            fill="hsl({generate_hsl_string(*petal_color)})" opacity="1" transform="rotate({deg}, {px}, {py})" />
+        """)
+        petal_angles.append(angle)
+
+    # Draw petal highlights
+
+    for angle in petal_angles:
+        px = center_x + math.cos(angle) * (radius * 0.75)
+        py = center_y + math.sin(angle) * (radius * 0.75)
+        svg_elements.append(
+        f'<line x1="{center_x}" y1="{center_y}" x2="{px}" y2="{py}" stroke="hsl({generate_hsl_string(*highlight_color)})" stroke-width="{200*highlights*roundness//petals}" stroke-linecap="round" />'
+        )
+    
+    # Draw flower center
+    svg_elements.append(
+        f'  <circle cx="{center_x}" cy="{center_y}" r="{radius * roundness}" fill="hsl({generate_hsl_string(*center_color)})" stroke="hsl({generate_hsl_string(*ring_color)})" stroke-width="{4 * ring}" />'
+    )
+
+    return svg_elements
+
+petals = randint(6, 20)
+radius = randint(40, 100)
+roundness = randint(1, 4) / 10
+color = choice([(357, "91%", "52%"), (330, "100%", "50%"), (360, "100%", "38%"), (346, "53%", "58%"), (26, "71%", "66%"), (38, "71%", "64%"), (29, "97%", "43%"), (107, "28%", "22%"), (106, "25%", "45%")])
+palette = generate_hsl_palette(*color)
+colors = sample(palette, k=4) 
+highlights = choice([0, 1])
+ring = choice([0, 1])
+num_flowers = math.ceil(140 / radius)
+
+svg_elements = []
+svg_elements.append('<svg xmlns="http://w3.org" viewBox="0 0 400 400">')
+
+for i in range(num_flowers):
+    center_y = randint(radius + 20, 150)
+    center_x = (400 / num_flowers)/2 + (i * (400 / num_flowers))
+
+    svg_elements = generate_flower_svg(svg_elements, petals, radius, roundness, colors, highlights, ring, center_x, center_y)
+
+pot = """
+<g transform="translate(50, 137) scale(1.5, 1.25)">
+<ellipse cx="100" cy="128" rx="40" ry="10" fill="#5D4037"/>
+<rect x="52" y="130" width="96" height="18" rx="5" ry="5" fill="#D84315" stroke="#8D2600" stroke-width="2"/>
+<path d="M60 148 L140 148 L128 205 Q127 210 122 210 L78 210 Q73 210 72 205 Z" fill="#E64A19" stroke="#8D2600" stroke-width="2"/>
+</g>
+"""
+svg_elements.append(pot)
+
+svg_elements.append('</svg>')
+svg = "".join(svg_elements)
+js.document.getElementById("svg-container").innerHTML = svg
+            `);
+}
+initPyodide();
